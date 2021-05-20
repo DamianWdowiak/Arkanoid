@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      canvas {
+        border: 1px solid #d3d3d3;
+        background-color: #f1f1f1;
+        padding-left: 0;
+        padding-right: 0;
+        margin-left: auto;
+        margin-right: auto;
+        display: block;
+      }
+    </style>
+  </head>
+  <body onload="startGame()">
+    <script>
+      var myGamePiece;
+      var myObstacles = [];
+      var ballRadius = 10;
+      var x = 20;
+      var y = 20;
+      var dx = 1;
+      var dy = -1;
+
+      document.addEventListener("keydown", keyDownHandler, false);
+      document.addEventListener("keyup", keyUpHandler, false);
+
+      function keyDownHandler(e) {
+        if (e.key == "Right" || e.key == "ArrowRight") {
+          myGamePiece.speedX = 2;
+        } else if (e.key == "Left" || e.key == "ArrowLeft") {
+          myGamePiece.speedX = -2;
+        }
+      }
+
+      function keyUpHandler(e) {
+        if (e.key == "Right" || e.key == "ArrowRight") {
+          myGamePiece.speedX = 0;
+        } else if (e.key == "Left" || e.key == "ArrowLeft") {
+          myGamePiece.speedX = 0;
+        }
+      }
+
+      function startGame() {
+        myGamePiece = new component(60, 20, "red", 210, 270);
+        myGamePiece.gravity = 0.05;
+        myGameArea.start();
+        drawBall(x, y);
+      }
+
+      var myGameArea = {
+        canvas: document.createElement("canvas"),
+        start: function () {
+          this.canvas.width = 480;
+          this.canvas.height = 270;
+          this.context = this.canvas.getContext("2d");
+          document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+          this.frameNo = 0;
+          clearInterval(this.interval);
+          this.interval = setInterval(updateGameArea, 20);
+        },
+        clear: function () {
+          this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        },
+        stop: function () {
+          clearInterval(this.interval);
+        },
+        reset: function () {
+          myGamePiece;
+          myObstacles = [];
+          ballRadius = 10;
+          x = 20;
+          y = 20;
+          dx = 1;
+          dy = -1;
+          this.clear();
+          startGame();
+        },
+      };
+
+      function drawBall(x, y) {
+        ctx = myGameArea.context;
+        ctx.beginPath();
+        ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+        ctx.fillStyle = "#e34d93";
+        ctx.fill();
+        ctx.closePath();
+      }
+
+      function component(width, height, color, x, y, type) {
+        this.type = type;
+        this.score = 0;
+        this.width = width;
+        this.height = height;
+        this.speedX = 0;
+        this.speedY = 0;
+        this.x = x;
+        this.y = y;
+        this.gravity = 0;
+        this.gravitySpeed = 0;
+        this.update = function () {
+          ctx = myGameArea.context;
+          if (this.type == "text") {
+            ctx.font = this.width + " " + this.height;
+            ctx.fillStyle = color;
+            ctx.fillText(this.text, this.x, this.y);
+          } else {
+            ctx.fillStyle = color;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+          }
+        };
+        this.newPos = function () {
+          this.gravitySpeed += this.gravity;
+          if (
+            this.x + this.speedX > 0 &&
+            this.x + this.speedX + this.width < myGameArea.canvas.width
+          ) {
+            this.x += this.speedX;
+          }
+          this.y += this.speedY + this.gravitySpeed;
+          this.hitBottom();
+        };
+        this.hitBottom = function () {
+          var rockbottom = myGameArea.canvas.height - this.height;
+          if (this.y > rockbottom) {
+            this.y = rockbottom;
+            this.gravitySpeed = 0;
+          }
+        };
+        this.crashWith = function (otherobj) {
+          var myleft = this.x;
+          var myright = this.x + this.width;
+          var mytop = this.y;
+          var mybottom = this.y + this.height;
+          var otherleft = otherobj.x;
+          var otherright = otherobj.x + otherobj.width;
+          var othertop = otherobj.y;
+          var otherbottom = otherobj.y + otherobj.height;
+          var crash = true;
+          if (
+            mybottom < othertop ||
+            mytop > otherbottom ||
+            myright < otherleft ||
+            myleft > otherright
+          ) {
+            crash = false;
+          }
+          return crash;
+        };
+      }
+
+      function updateGameArea() {
+        myGameArea.clear();
+        drawBall(x, y);
+        myGamePiece.newPos();
+        myGamePiece.update();
+
+        if (
+          x + dx > myGameArea.canvas.width - ballRadius ||
+          x + dx < ballRadius
+        ) {
+          dx = -dx;
+        }
+        if (y + dy < ballRadius) {
+          dy = -dy;
+        } else if (y + dy > myGamePiece.y - ballRadius) {
+          if (x > myGamePiece.x && x < myGamePiece.x + myGamePiece.width) {
+            dy = -dy;
+          } else {
+            myGameArea.reset();
+          }
+        }
+        x += dx;
+        y += dy;
+      }
+
+      function everyinterval(n) {
+        if ((myGameArea.frameNo / n) % 1 == 0) {
+          return true;
+        }
+        return false;
+      }
+
+      function moveleft() {
+        myGamePiece.speedX = -2;
+      }
+
+      function moveright() {
+        myGamePiece.speedX = 2;
+      }
+
+      function clearmove() {
+        myGamePiece.speedX = 0;
+        myGamePiece.speedY = 0;
+      }
+
+      function stop() {
+        myGameArea.stop();
+      }
+
+      function start() {
+        myGameArea.start();
+      }
+    </script>
+    <div
+      style="
+        text-align: center;
+        width: 480px;
+        padding-left: 0;
+        padding-right: 0;
+        margin-left: auto;
+        margin-right: auto;
+        display: block;
+      "
+    >
+      <br />
+      <button
+        onmousedown="moveleft()"
+        onmouseup="clearmove()"
+        ontouchstart="moveleft()"
+      >
+        LEFT
+      </button>
+      <button
+        onmousedown="moveright()"
+        onmouseup="clearmove()"
+        ontouchstart="moveright()"
+      >
+        RIGHT
+      </button>
+    </div>
+    <br />
+    <div
+      style="
+        text-align: center;
+        width: 480px;
+        padding-left: 0;
+        padding-right: 0;
+        margin-left: auto;
+        margin-right: auto;
+        display: block;
+      "
+    >
+      <button onmousedown="stop()">STOP</button>
+      <button onmousedown="start()">START</button>
+    </div>
+  </body>
+</html>
